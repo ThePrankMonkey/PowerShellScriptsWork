@@ -2,7 +2,8 @@
     .SYNOPSIS
     This module holds commonly reused fucntions for Application Services scripts.
     .DESCRIPTION
-    There are three functions held in this module that can be called on after importing it.
+    There are four functions held in this module that can be called on after importing it.
+    CreateLogs  - Builds logpaths and global variables for them.
     Log         - Takes info that will be logged to the screen and a log file.
     SelfTest    - Can be used to test against known settings.
     WaitForExit - Can handle smoothly exiting the script.
@@ -22,7 +23,7 @@
 #############
 $global:ErrorList     = @()
 $global:ErrorLogPath  = ""
-$global:TimeStamp     = Get-Date -Format "yyy.MM.ddTHH.mm.ss"
+$global:TimeStamp     = Get-Date -Format "yyyy.MM.ddTHH.mm.ss"
 $global:PostObjects   =  @()
 $global:PreObjects    =  @()
 $global:GlobalArgs    = ""
@@ -36,6 +37,81 @@ $predesignatedFolder  = "C:\Temp"
 ####################
 # Public Functions #
 ####################
+Function CreateLogs
+{
+<#
+    .SYNOPSIS
+    Creates log folder and Error log file.
+    .DESCRIPTION
+    This function will force the creation of a folder either relative to the location the script was ran from, or in a pre-designated folder.
+    Then the function will make a path where errors will be logged, and additional ones if called on again.
+    .NOTES
+    Version:  1.1
+    Ticket:   None
+    Requires: PowerShell v4
+    Creator:  Matthew Hellmer
+    History:  Version...Date.........User.....................Comment
+              v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
+              v1.0      2017.02.23   Matthew.Hellmer          Supports making mulitple logs now.
+    .PARAMETER Logs
+    An array of logs to make paths for. Always includes Error
+    .PARAMETER Ticket
+    The ticket for the script.
+    .PARAMETER Predesignated
+    This is a switch as to whether or not the script defaults to the predesignated folder. Default is $false and attempts to store in relative folder.
+    .EXAMPLE
+    CreateLogs -Logs @("Extra", "FoundUsers") -Ticket "CHG0012345"
+    Will create three log paths (Error, Extra, FoundUsers) that look like ???\CHG0012345_ErrorLog_2017.01.31T12.45.34.log
+    This reassigns the automatic ???\ErrorLog_2017.01.31T12.45.34.log
+#>
+    Param(
+        [Parameter(Position=0, Mandatory=$false)]
+        [Array]
+        $Logs = @(),
+        [Parameter(Position=1, Mandatory=$false)]
+        [String]
+        $Ticket = $null,
+        [Switch]
+        $Predesignated
+    )
+    Process{
+        # Forces an Error log to be added to the list to make
+        $Logs += "Error"
+
+        # If a ticket is provided, this alters the text a little to make things look nicer.
+        if($Ticket){
+            $Ticket += "_"
+        }
+
+        # If the switch was triggered, the logpath will always be the predesignated one.
+        if($Predesignated){
+            $logPath = $predesignatedFolder
+        }
+        else{
+            try{
+                $logPath = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent -ErrorAction Stop
+            }
+            catch{
+                $logPath = $predesignatedFolder
+            }
+        }
+
+        # Builds logpath and make its folder
+        $logPath = Join-Path -Path $logPath -ChildPath "Logs"
+        if(!(Test-Path -Path $logPath)){
+            New-Item -Path $logPath -ItemType Directory | Out-Null
+        }
+
+        # Make log paths and global variables for them.
+        foreach($Log in $Logs){
+            $VarName = "$($Log)LogPath"
+            $LogName = "{0}{1}_{2}.log" -f $Ticket, $Log, $global:TimeStamp
+            Set-Variable -Name $VarName -Scope Global -Value (Join-Path -Path $logPath -ChildPath $LogName)
+        }
+    }
+}
+
+
 Function Log
 {
 <#
@@ -119,13 +195,17 @@ Function Log
         }
         $errorTime   = Get-Date -Format "yyyy.MM.ddTHH:mm:ss"
         $errorArray  = @($errorTime,$Type,$ObjectName,$CustomMessage,$errorType,$errorLocation,$errorMessage)
-        $errorString = "{0} -- {1,-5} -- {2,20} -- {3}; {4}; {5}; {6}" -f $errorArray
+        $errorFormat = "{0,19} -- {1,-5} -- {2,20} -- {3}; {4}; {5}; {6}"
+        $errorString = "$errorFormat" -f $errorArray
         
         # Handle error to screen
         #Write-Host "Issue with $ObjectName`n`t$CustomMessage`n`t$errorMessage" -ForegroundColor $foreColor -BackgroundColor $backColor
         Write-Host $errorString -ForegroundColor $foreColor -BackgroundColor $backColor
 
         # Handle error to log
+        if(!(Test-Path -Path $global:ErrorLogPath)){
+            "$errorFormat" -f "Time", "Type", "Object", "Custom Message", "Error Type", "Location", "Full Error Message" | Add-Content -Path $global:ErrorLogPath -Force
+        }
         #$errorArray -join "`t" | Add-Content -Path $global:ErrorLogPath -Force
         $errorString | Add-Content -Path $global:ErrorLogPath -Force
 
@@ -346,39 +426,6 @@ Function Colorize{
 }
 
 
-Function CreateLogs
-{
-<#
-    .SYNOPSIS
-    Private Function. Creates log folder and Error log file.
-    .DESCRIPTION
-    Private Function.
-    This function will force the creation of a folder either relative to the location the script was ran from, or in a pre-designated folder.
-    Then the function will make a path where errors will be logged.
-    .NOTES
-    Version:  1.0
-    Ticket:   None
-    Requires: PowerShell v4
-    Creator:  Matthew Hellmer
-    History:  Version...Date.........User.....................Comment
-              v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
-#>
-    Process{
-        try{
-            $logPath = Split-Path -Path $script:MyInvocation.MyCommand.PAth -Parent -ErrorAction Stop
-        }
-        catch{
-            $logPath = $predesignatedFolder
-        }
-        $logPath = Join-Path -Path $logPath -ChildPath "Logs"
-        if(!(Test-Path -Path $logPath)){
-            New-Item -Path $logPath -ItemType Directory | Out-Null
-        }
-        $global:ErrorLogPath = Join-Path -Path $logPath -ChildPath "ErrorLog_$($global:TimeStamp).log"
-    }
-}
-
-
 
 
 ################
@@ -392,6 +439,7 @@ CreateLogs
 #################
 # Export Module #
 #################
+Export-ModuleMember -Function CreateLogs
 Export-ModuleMember -Function Log
 Export-ModuleMember -Function SelfTest
 Export-ModuleMember -Function WaitToExit
@@ -408,7 +456,7 @@ Export-ModuleMember -Variable $logPath
 #############
 # Test Data #
 #############
-<#
+
 Import-Module ActiveDirectory
 Log -CustomMessage "Testing Info" -Type Info
 try{
@@ -424,4 +472,3 @@ $TestDataExpected = @{"Name"="Norm Test1"; "StreetAddress"="1000 Cha St"}
 SelfTest -Type Pre  -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Post -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Summary
-#>
