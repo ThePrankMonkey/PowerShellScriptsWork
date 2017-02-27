@@ -328,7 +328,7 @@ Function WaitToExit
         $NoExit
     )
     Process{
-        if(!(NoExit)){
+        if(!($NoExit)){
             if($global:GlobalArgs -eq "Service"){
                 exit
             }
