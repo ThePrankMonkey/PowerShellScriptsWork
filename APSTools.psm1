@@ -8,13 +8,14 @@
     SelfTest    - Can be used to test against known settings.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.1
+    Version:  1.2
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
-              v1.1      2017.02.16   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed indentified path to relative calling script)
+              v1.1      2017.02.28   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed indentified path to relative calling script)
+              v1.2      2017.02.28   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit)
 #>
 
 #Requires -Version 4
@@ -312,27 +313,36 @@ Function WaitToExit
     .DESCRIPTION
     Handles exiting, whether the script is ran via ISE or command line. Also allows for auto closing if "Service" is passed when the script runs.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
+              v1.1      2017.02.28   Matthew.Hellmer          NoExit switch added.
+    .PARAMETER NoExit
+    If called, the function won't actually exit. This is mostly for testing and debugging purposes.
 #>
+    Param(
+        [Switch]
+        $NoExit
+    )
     Process{
-        if($global:GlobalArgs -eq "Service"){
-            exit
-        }
-        try{
-            Write-Host "Press any key to exit..."
-            $host.UI.RawUI.FlushInputBuffer()
-            $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit
-        }
-        catch{
-            Write-Host "Ignore the next message, pressing Enter will exit."
-            Pause
-            exit
+        if(!(NoExit)){
+            if($global:GlobalArgs -eq "Service"){
+                exit
+            }
+            try{
+                Write-Host "Press any key to exit..."
+                $host.UI.RawUI.FlushInputBuffer()
+                $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit
+            }
+            catch{
+                Write-Host "Ignore the next message, pressing Enter will exit."
+                Pause
+                exit
+            }
         }
     }
 }
