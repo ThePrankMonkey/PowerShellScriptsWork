@@ -102,7 +102,7 @@ Function CreateLogs
                     Write-Host 2, $script:MyInvocation.PSCommandPath
                     Write-Host 3, $MyInvocation.PSCommandPath.Path
                     Write-Host 4, $MyInvocation.PSCommandPath
-                    $logPath = Split-Path -Path $MyInvocation.PSCommandPath -Parent -ErrorAction Stop
+                    $logPath = Split-Path -Path $script:MyInvocation.PSCommandPath -Parent -ErrorAction Stop
                 }
             }
             catch{
