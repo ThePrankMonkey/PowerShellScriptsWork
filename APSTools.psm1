@@ -163,7 +163,9 @@ Function Log
             switch($Object.GetType().Name){
                 "ADComputer"           {$ObjectName = $Object.SamAccountNAme; break;}
                 "ADOrganizationalUnit" {$ObjectName = $Object.DistinguishedName; break;}
-                "ADUser"               {$ObjectName = $Object.SamAccountNAme; break;}
+                "ADUser"               {$ObjectName = $Object.SamAccountName; break;}
+                "DirectoryInfo"        {$ObjectName = $Object.Name; break;}
+                "FileInfo     "        {$ObjectName = $Object.Name; break;}
                 "String"               {$ObjectName = $Object; break;}
                 default                {$ObjectName = $Object; break;}
             }
