@@ -98,6 +98,10 @@ Function CreateLogs
                     $logPath = Split-Path -Path $Override -Parent -ErrorAction Stop
                 }
                 else{
+                    $script:MyInvocation.PSCommandPath.Path
+                    $script:MyInvocation.PSCommandPath
+                    $MyInvocation.PSCommandPath.Path
+                    $MyInvocation.PSCommandPath
                     $logPath = Split-Path -Path $script:MyInvocation.PSCommandPath.Path -Parent -ErrorAction Stop
                 }
             }
