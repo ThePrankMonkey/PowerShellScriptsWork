@@ -8,12 +8,13 @@
     SelfTest    - Can be used to test against known settings.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
+              v1.1      2017.02.16   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed indentified path to relative calling script)
 #>
 
 #Requires -Version 4
@@ -46,19 +47,20 @@ Function CreateLogs
     This function will force the creation of a folder either relative to the location the script was ran from, or in a pre-designated folder.
     Then the function will make a path where errors will be logged, and additional ones if called on again.
     .NOTES
-    Version:  1.1
+    Version:  1.2
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
-              v1.0      2017.02.23   Matthew.Hellmer          Supports making mulitple logs now.
+              v1.1      2017.02.23   Matthew.Hellmer          Supports making mulitple logs now.
+              v1.2      2017.02.28   Matthew.Hellmer          Added a Override parameter. Fixed the identified folder to be relative to the calling script.
     .PARAMETER Logs
     An array of logs to make paths for. Always includes Error
     .PARAMETER Ticket
     The ticket for the script.
     .PARAMETER Override
-    This is a new path to 
+    This is a new path to override the log path with something other than the predesignated one.
     .PARAMETER Predesignated
     This is a switch as to whether or not the script defaults to the predesignated folder. Default is $false and attempts to store in relative folder.
     .EXAMPLE
@@ -98,10 +100,6 @@ Function CreateLogs
                     $logPath = Split-Path -Path $Override -Parent -ErrorAction Stop
                 }
                 else{
-                    Write-Host 1, $script:MyInvocation.PSCommandPath.Path
-                    Write-Host 2, $script:MyInvocation.PSCommandPath
-                    Write-Host 3, $MyInvocation.PSCommandPath.Path
-                    Write-Host 4, $MyInvocation.PSCommandPath
                     $logPath = Split-Path -Path $script:MyInvocation.PSCommandPath -Parent -ErrorAction Stop
                 }
             }
