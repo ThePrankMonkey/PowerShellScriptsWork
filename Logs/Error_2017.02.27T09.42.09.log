@@ -19,3 +19,7 @@
 2017.02.27T10:45:55 -- Warn  --                      -- TestGitWeekly is not a git folder yet; ; ; 
 2017.02.27T10:45:55 -- Info  --                      -- No changes for TestInitialImport; ; ; 
 2017.02.27T12:33:05 -- Info  --                      -- No changes for Address-Adder; ; ; 
+2017.02.27T12:33:05 -- Info  --                      -- No changes for TestGitBackout; ; ; 
+2017.02.27T12:33:05 -- Warn  --                      -- TestGitWeekly is not a git folder yet; ; ; 
+2017.02.27T12:33:06 -- Info  --                      -- No changes for TestInitialImport; ; ; 
+2017.02.27T12:40:10 -- Info  --                      -- No changes for Address-Adder; ; ; 
