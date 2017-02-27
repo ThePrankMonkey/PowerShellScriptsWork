@@ -34,3 +34,7 @@
 2017.02.27T13:24:39 -- Info  --       TestGitBackout -- No changes for TestGitBackout; ; ; 
 2017.02.27T13:24:40 -- Info  --    TestInitialImport -- No changes for TestInitialImport; ; ; 
 2017.02.27T13:25:59 -- Info  --        Address-Adder -- No changes for Address-Adder; ; ; 
+2017.02.27T13:25:59 -- Pass  --      APSTools-Module -- Committed 1 files for APSTools-Module; ; ; 
+2017.02.27T13:26:00 -- Info  --       TestGitBackout -- No changes for TestGitBackout; ; ; 
+2017.02.27T13:26:00 -- Pass  --        TestGitWeekly -- Committed 1 files for TestGitWeekly; ; ; 
+2017.02.27T13:26:00 -- Info  --    TestInitialImport -- No changes for TestInitialImport; ; ; 
