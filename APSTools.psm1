@@ -456,7 +456,7 @@ Export-ModuleMember -Variable $logPath
 #############
 # Test Data #
 #############
-
+<#
 Import-Module ActiveDirectory
 Log -CustomMessage "Testing Info" -Type Info
 try{
@@ -472,3 +472,4 @@ $TestDataExpected = @{"Name"="Norm Test1"; "StreetAddress"="1000 Cha St"}
 SelfTest -Type Pre  -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Post -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Summary
+#>

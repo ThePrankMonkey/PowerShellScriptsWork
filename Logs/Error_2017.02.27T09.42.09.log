@@ -1,0 +1,9 @@
+               Time -- Type  --               Object -- Custom Message; Error Type; Location; Full Error Message
+2017.02.27T09:42:14 -- Info  --                      -- Testing Info; ; ; 
+2017.02.27T09:42:16 -- Error --                      -- Testing Error; [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]; 463:13; Cannot find an object with identity: 'Fake.User' under: 'DC=s01,DC=smsuite,DC=local'.
+2017.02.27T10:06:27 -- Warn  --                      -- TestGitWeekly is not a git folder yet; ; ; 
+2017.02.27T10:12:58 -- Info  --                      -- No changes for Address-Adder; ; ; 
+2017.02.27T10:12:59 -- Info  --                      -- No changes for TestGitBackout; ; ; 
+2017.02.27T10:12:59 -- Warn  --                      -- TestGitWeekly is not a git folder yet; ; ; 
+2017.02.27T10:12:59 -- Info  --                      -- No changes for TestInitialImport; ; ; 
+2017.02.27T10:43:36 -- Info  --                      -- No changes for Address-Adder; ; ; 
