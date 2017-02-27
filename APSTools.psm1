@@ -57,6 +57,8 @@ Function CreateLogs
     An array of logs to make paths for. Always includes Error
     .PARAMETER Ticket
     The ticket for the script.
+    .PARAMETER Override
+    This is a new path to 
     .PARAMETER Predesignated
     This is a switch as to whether or not the script defaults to the predesignated folder. Default is $false and attempts to store in relative folder.
     .EXAMPLE
@@ -71,6 +73,9 @@ Function CreateLogs
         [Parameter(Position=1, Mandatory=$false)]
         [String]
         $Ticket = $null,
+        [Parameter(Position=2, Mandatory=$false)]
+        [String]
+        $Override = $null,
         [Switch]
         $Predesignated
     )
@@ -89,7 +94,12 @@ Function CreateLogs
         }
         else{
             try{
-                $logPath = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent -ErrorAction Stop
+                if($Override){
+                    $logPath = Split-Path -Path $Override -Parent -ErrorAction Stop
+                }
+                else{
+                    $logPath = Split-Path -Path $script:MyInvocation.PSCommandPath.Path -Parent -ErrorAction Stop
+                }
             }
             catch{
                 $logPath = $predesignatedFolder
