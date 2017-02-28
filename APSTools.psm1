@@ -6,6 +6,7 @@
     CreateLogs  - Builds logpaths and global variables for them.
     Log         - Takes info that will be logged to the screen and a log file.
     SelfTest    - Can be used to test against known settings.
+    SendEmail   - Handles sending notification emails.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
     Version:  1.3
