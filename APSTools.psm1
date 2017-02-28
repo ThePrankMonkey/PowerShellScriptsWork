@@ -8,14 +8,15 @@
     SelfTest    - Can be used to test against known settings.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.2
+    Version:  1.3
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
-              v1.1      2017.02.28   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed identified path to relative calling script)
-              v1.2      2017.02.28   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit). Updated Log (accepts File and Folder objects not).
+              v1.1      2017.02.23   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed identified path to relative calling script)
+              v1.2      2017.02.27   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit). Updated Log (accepts File and Folder objects not).
+              v1.3      2017.02.28   Matthew.Hellmer          Added SendEmail function.
 #>
 
 #Requires -Version 4
@@ -306,6 +307,92 @@ Function SelfTest
 }
 
 
+Function SendEmail
+{
+<#
+    .SYNOPSIS
+    Handles sending emails
+    .DESCRIPTION
+    This function will handle the creation and sending of an email. This allows just updating the APSTools module
+    for changes in email settings.
+    .NOTES
+    Version:  1.0
+    Ticket:   None
+    Requires: PowerShell v4
+    Creator:  Matthew Hellmer
+    History:  Version...Date.........User.....................Comment
+              v1.0      2017.02.27   Matthew.Hellmer          Initial Creation
+    .PARAMETER Sender
+    Automatically defaults to Notifications account, but can be overridden
+    .PARAMETER Recipient
+    Automatically defaults to SericeDesk account, but can be overridden
+    .PARAMETER SMTP
+    Automatically defaults to a standard exchange server, but can be overridden
+    .PARAMETER Subject
+    This is required, and will be the subject to the sent email.
+    .PARAMETER Message
+    This is required, and will be the body to the sent email.
+    .PARAMETER Attachments
+    If you want to include any attachments, include their filepaths in an array.
+    .PARAMETER HTML
+    Flip this flag if your message contains HTML.
+    .EXAMPLE
+    SendEmail -Subject "test" -Message "test1" -Attachments @($ErrorLogPath)
+    An email is attempted to be sent from Notifications to ServiceDesk with the ErrorLog attached.
+#>
+    Param(
+        [Parameter(Position=0, Mandatory=$false)]
+        [String]
+        $Sender = "Notifications@s01.smsuite.local",
+        [Parameter(Position=1, Mandatory=$false)]
+        [String]
+        $Recipient = "ServiceDesk@s01.smsuite.local",
+        [Parameter(Position=2, Mandatory=$false)]
+        [String]
+        $SMTP = "s01a-ex01a.s01.smsuite.local",
+        [Parameter(Position=3, Mandatory=$true)]
+        [String]
+        $Subject,
+        [Parameter(Position=4, Mandatory=$true)]
+        [String]
+        $Message,
+        [Parameter(Position=5, Mandatory=$false)]
+        [Array]
+        $Attachments = @(),
+        [Switch]
+        $HTML
+    )
+    Begin{
+        $fakeUser = "FakeUser"
+        $fakePass = ConvertTo-SecureString "FakePass" -AsPlainText -Force
+        $cred     = New-Object System.Management.Automation.PSCredential($fakeUser, $fakePass)
+    }
+    Process{
+        $EmailParameters = @{
+            'Body'       = $Message;
+            'BodyAsHtml' = $HTML;
+            'From'       = $Sender;
+            'SmtpServer' = $SMTP;
+            'Subject'    = $Subject;
+            'To'         = $Recipient;
+            'Cc'         = @($env:USERNAME,$env:USERDNSDOMAIN) -join "@";
+            'Credential' = $cred;
+            'DeliveryNotificationOption' = "OnSuccess, OnFailure"
+        }
+        if($Attachments.Count -gt 0){
+            $EmailParameters['Attachments'] = $Attachments
+        }
+        try{
+            Send-MailMessage @EmailParameters -ErrorAction Stop
+        }
+        catch{
+            [System.GC]::Collect()
+            Log -CustomMessage "Error encountered while sending email" -Type Error
+        }
+    }
+}
+
+
 Function WaitToExit
 {
 <#
@@ -467,6 +554,7 @@ CreateLogs
 Export-ModuleMember -Function CreateLogs
 Export-ModuleMember -Function Log
 Export-ModuleMember -Function SelfTest
+Export-ModuleMember -Function SendEmail
 Export-ModuleMember -Function WaitToExit
 Export-ModuleMember -Variable $global:ErrorList
 Export-ModuleMember -Variable $global:ErrorLogPath
@@ -497,4 +585,5 @@ $TestDataExpected = @{"Name"="Norm Test1"; "StreetAddress"="1000 Cha St"}
 SelfTest -Type Pre  -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Post -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Summary
+SendEmail -Subject "test" -Message "test1" -Attachments @($ErrorLogPath)
 #>
