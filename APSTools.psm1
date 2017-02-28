@@ -14,8 +14,8 @@
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
-              v1.1      2017.02.28   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed indentified path to relative calling script)
-              v1.2      2017.02.28   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit)
+              v1.1      2017.02.28   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed identified path to relative calling script)
+              v1.2      2017.02.28   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit). Updated Log (accepts File and Folder objects not).
 #>
 
 #Requires -Version 4
@@ -139,6 +139,7 @@ Function Log
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
+              v1.1      2017.02.28   Matthew.Hellmer          Added Folders and Files to GetType switch.
     .PARAMETER Object
     This is the object that triggered the error, and will default to an empty string if nor provided.
     .PARAMETER NewError
@@ -178,7 +179,7 @@ Function Log
                 "ADOrganizationalUnit" {$ObjectName = $Object.DistinguishedName; break;}
                 "ADUser"               {$ObjectName = $Object.SamAccountName; break;}
                 "DirectoryInfo"        {$ObjectName = $Object.Name; break;}
-                "FileInfo     "        {$ObjectName = $Object.Name; break;}
+                "FileInfo"             {$ObjectName = $Object.Name; break;}
                 "String"               {$ObjectName = $Object; break;}
                 default                {$ObjectName = $Object; break;}
             }
