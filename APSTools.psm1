@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
     This module holds commonly reused fucntions for Application Services scripts.
     .DESCRIPTION
@@ -9,7 +9,7 @@
     SendEmail   - Handles sending notification emails.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.3
+    Version:  1.4
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -18,6 +18,7 @@
               v1.1      2017.02.23   Matthew.Hellmer          Updated CreateLogs (new parameter Override, fixed identified path to relative calling script)
               v1.2      2017.02.27   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit). Updated Log (accepts File and Folder objects not).
               v1.3      2017.02.28   Matthew.Hellmer          Added SendEmail function.
+              v1.4      2017.03.03   Matthew.Hellmer          Added OpenForMe function.
 #>
 
 #Requires -Version 4
@@ -237,6 +238,94 @@ Function Log
             Add-Member -InputObject $errObj -MemberType NoteProperty -Name Location -Value $errorLocation
             Add-Member -InputObject $errObj -MemberType NoteProperty -Name Message  -Value $errorMessage
             $global:ErrorList += $errObj
+        }
+    }
+}
+
+
+Function OpenForMe
+{
+<#
+    .SYNOPSIS
+    Handles Open File and Folder Dialogues
+    .DESCRIPTION
+    Will produce a dialogue box that asks for files or folders, and capture an array of appropriate objects. If none are selected, it will return false.
+    .NOTES
+    Version:  1.0
+    Ticket:   None
+    Requires: PowerShell v4
+    Creator:  Matthew Hellmer
+    History:  Version...Date.........User.....................Comment
+              v1.0      2017.03.03   Matthew.Hellmer          Initial Creation
+    .PARAMETER Type
+    This determines if the dialogue is for File or Folder.
+    .PARAMETER Title
+    This is the description on the popup.
+    .PARAMETER Filter
+    Submit an string for the filter to restrict File dialogue. Defaults to all. The format is a little tricky. Example "Pictures | *.png;*.jpg;*.gif|Logs | *.log"
+    .PARAMETER Multiple
+    Switch for whether multiple files should be selected.
+    .EXAMPLE
+    OpenForMe -Type File -Title "Pick your Logs" -Filter "Pictures | *.png;*.jpg;*.gif|Logs | *.log"
+    Opens a window for files that allows you to select all files or only the listed picture formats.
+#>
+    Param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateSet("Folder", "File")]
+        [String]
+        $Type,
+        [Parameter(Position=1, Mandatory=$false)]
+        [String]
+        $Title = "Please select your option.",
+        [Parameter(Position=2, Mandatory=$false)]
+        [String]
+        $Filter = "All Files | *.*",
+        [Switch]
+        $Multiple
+    )
+    Begin{
+        [Void] [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
+    }
+    Process{
+        switch($Type){
+            "Folder"{
+                $OpenForMeObj = New-Object System.Windows.Forms.FolderBrowserDialog
+                $OpenForMeObj.ShowNewFolderButton = $false
+                $OpenForMeObj.Description  = $Title
+                $OpenForMeObj.ShowDialog() | Out-Null
+                $selections = @($OpenForMeObj.SelectedPath)
+            }
+            "File"{
+                $OpenForMeObj = New-Object System.Windows.Forms.OpenFileDialog
+                $OpenForMeObj.initialDirectory = $initialDirectory
+                $OpenForMeObj.Multiselect = $Multiple
+                $OpenForMeObj.Title  = $Title
+                try{
+                    $OpenForMeObj.Filter = $Filter
+                }
+                catch [System.Management.Automation.SetValueInvocationException]{
+                    $OpenForMeObj.Filter = "All Files | *.*"
+                    Log -NewError $_ -CustomMessage "Format for FileType Filter was wrong, defaulting to ALL. You provided: `"$Filter`"" -Type Error
+                }
+                catch{
+                    $OpenForMeObj.Filter = "All Files | *.*"
+                    Log -NewError $_ -CustomMessage "Unexpected error on OpenForMe-File." -Type Error
+                }
+                $OpenForMeObj.ShowDialog() | Out-Null
+                $selections = @($OpenForMeObj.FileNames)
+            }
+        }
+
+        if($selections){
+            $Output = @()
+            foreach($selection in $selections){
+                $Output += Get-Item -Path $selection
+            }
+            return $Output
+        }
+        else{
+            Log -CustomMessage "User did not select anything." -Type Info
+            return $false
         }
     }
 }
@@ -554,6 +643,7 @@ CreateLogs
 #################
 Export-ModuleMember -Function CreateLogs
 Export-ModuleMember -Function Log
+Export-ModuleMember -Function OpenForMe
 Export-ModuleMember -Function SelfTest
 Export-ModuleMember -Function SendEmail
 Export-ModuleMember -Function WaitToExit
