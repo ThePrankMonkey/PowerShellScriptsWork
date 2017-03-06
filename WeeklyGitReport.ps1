@@ -7,7 +7,7 @@
     If changes are found, a weekly commit is performed.
     Lastly, a summary email is sent out to report on findings.
     .NOTES
-    Version:  1.3
+    Version:  1.5
     Ticket:   CHG0031543
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -16,6 +16,8 @@
               v1.1      2017.02.28   Matthew.Hellmer          Added email generation sections.
               v1.2      2017.02.28   Matthew.Hellmer          Updated TryToAdd (adds files to objects). Added CollectInfo and BuildEmailMessage functions.
               v1.3      2017.03.01   Matthew.Hellmer          Added BuildEmailMessageHTML. Changed email to use this.
+              v1.4      2017.03.02   Matthew.Hellmer          Updated PassesGitCheck (CheckGit).
+              v1.5      2017.03.06   Matthew.Hellmer          Updated MakeGit (logs more comments).
 #>
 
 #Requires -Version 4
@@ -26,7 +28,12 @@ Import-Module '\\S01a-GitServer\F$\Script Repository\APSTools-Module\APSTools.ps
 #############
 $global:GlobalArgs   = $args
 $global:emailObjects = @()
-$searchPath          = 'F:\Script Repository'
+if($args -eq "Service"){
+    $searchPath      = 'F:\Script Repository'
+}
+else{
+    $searchPath      = 'F:\Script Repository\GitTest'
+}
 $commitStamp         = Get-Date -Format "yyyy-MM-dd"
 $commitMessage       = "Weekly Backup and Commit $commitStamp"
 $global:emailSubject = $commitMessage
@@ -278,6 +285,7 @@ Function CollectInfo
     }
 }
 
+
 Function MakeGit
 {
 <#
@@ -292,6 +300,7 @@ Function MakeGit
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.28   Matthew.Hellmer          Initial Creation
+              v1.1      2017.03.06   Matthew.Hellmer          Added some logging.
     .PARAMETER Folder
     The folder that is processed.
     .EXAMPLE
@@ -304,10 +313,14 @@ Function MakeGit
         $Folder
     )
     Process{
+        Log -Object $Folder -CustomMessage "Initializing as a git repository" -Type Info
         git init --quiet
-        Log -Object $Folder -CustomMessage "Initialized as a git repository" -Type Info
         if(PassesGitCheck -Folder $Folder){
+            Log -Object $Folder -CustomMessage "Passed initialization check." -Type Info
             TryToAdd -Folder $Folder
+        }
+        else{
+            Log -Object $Folder -CustomMessage "Was not initialized as a git repository." -Type Fail
         }
     }
 }
@@ -321,12 +334,13 @@ Function PassesGitCheck
     .DESCRIPTION
     Checks to see if provided folder is a git repository. This is done by seeing if a .git folder is present and then if the repository can be queried.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.28   Matthew.Hellmer          Initial Creation
+              v1.1      2017.03.02   Matthew.Hellmer          Fixed issue with CheckGit reports
     .PARAMETER Folder
     The folder that is processed.
     .EXAMPLE
@@ -342,11 +356,16 @@ Function PassesGitCheck
         # Check if folder has a .git
         try{
             $CheckGit = Test-Path -Path (Join-Path -Path $Folder.FullName -ChildPath ".git")
-            Log -Object $Folder -CustomMessage "Folder has a .git folder." -Type Info
+            if($CheckGit){
+                Log -Object $Folder -CustomMessage "Folder has a .git folder." -Type Info
+            }
+            else{
+                Log -Object $Folder -CustomMessage "Folder does not have a .git folder." -Type Fail
+            }
         }
         catch{
             $CheckGit = $false
-            Log -Object $Folder -NewError $_ -CustomMessage "Error when checking for .git" -Type Error
+            Log -Object $Folder -NewError $_ -CustomMessage "Error when checking for .git folder" -Type Error
         }
 
         # Check if Git is initialized
@@ -360,11 +379,11 @@ Function PassesGitCheck
 
         $checkResults = $CheckGit -and $CheckInit
         if($checkResults){
-            Log -Object $Folder -CustomMessage "Folder has a git repository." -Type Info
+            Log -Object $Folder -CustomMessage "Folder is a git repository." -Type Info
             return $true
         }
         else{
-            Log -Object $Folder -CustomMessage "Folder does not have a git repository." -Type Fail
+            Log -Object $Folder -CustomMessage "Folder is not a git repository." -Type Fail
             return $false
         }
     }
