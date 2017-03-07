@@ -5,11 +5,12 @@
     There are four functions held in this module that can be called on after importing it.
     CreateLogs  - Builds logpaths and global variables for them.
     Log         - Takes info that will be logged to the screen and a log file.
+    OpenForMe   - Handles File/Folder selection dialog box.
     SelfTest    - Can be used to test against known settings.
     SendEmail   - Handles sending notification emails.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.4
+    Version:  1.5
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -19,6 +20,7 @@
               v1.2      2017.02.27   Matthew.Hellmer          Updated WaitToExit (new parameter NoExit). Updated Log (accepts File and Folder objects not).
               v1.3      2017.02.28   Matthew.Hellmer          Added SendEmail function.
               v1.4      2017.03.03   Matthew.Hellmer          Added OpenForMe function.
+              v1.5      2017.03.07   Matthew.Hellmer          Updated OpenForMe (handles initial directory).
 #>
 
 #Requires -Version 4
@@ -251,18 +253,22 @@ Function OpenForMe
     .DESCRIPTION
     Will produce a dialogue box that asks for files or folders, and capture an array of appropriate objects. If none are selected, it will return false.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.03.03   Matthew.Hellmer          Initial Creation
+              v1.1      2017.03.07   Matthew.Hellmer          Added InitialPath parameter. Defaults to folder that holds Error Logs.
     .PARAMETER Type
     This determines if the dialogue is for File or Folder.
     .PARAMETER Title
     This is the description on the popup.
     .PARAMETER Filter
-    Submit an string for the filter to restrict File dialogue. Defaults to all. The format is a little tricky. Example "Pictures | *.png;*.jpg;*.gif|Logs | *.log"
+    Submit an string for the filter to restrict File dialogue. Defaults to all. The format is a little tricky.
+    Example "Pictures | *.png;*.jpg;*.gif|Logs | *.log"
+    .PARAMETER InitialPath
+    Takes a filepath to start the dialog in.
     .PARAMETER Multiple
     Switch for whether multiple files should be selected.
     .EXAMPLE
@@ -280,26 +286,34 @@ Function OpenForMe
         [Parameter(Position=2, Mandatory=$false)]
         [String]
         $Filter = "All Files | *.*",
+        [Parameter(Position=3, Mandatory=$false)]
+        [String]
+        $InitialPath = $null,
         [Switch]
         $Multiple
     )
     Begin{
         [Void] [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
+        $StartPath = Split-Path $global:ErrorLogPath -Parent
     }
     Process{
+        if($InitialPath){
+            $StartPath = $InitialPath
+        }
         switch($Type){
             "Folder"{
                 $OpenForMeObj = New-Object System.Windows.Forms.FolderBrowserDialog
                 $OpenForMeObj.ShowNewFolderButton = $false
-                $OpenForMeObj.Description  = $Title
+                $OpenForMeObj.Description = $Title
+                $OpenForMeObj.SelectedPath = $StartPath
                 $OpenForMeObj.ShowDialog() | Out-Null
                 $selections = @($OpenForMeObj.SelectedPath)
             }
             "File"{
                 $OpenForMeObj = New-Object System.Windows.Forms.OpenFileDialog
-                $OpenForMeObj.initialDirectory = $initialDirectory
+                $OpenForMeObj.initialDirectory = $StartPath
                 $OpenForMeObj.Multiselect = $Multiple
-                $OpenForMeObj.Title  = $Title
+                $OpenForMeObj.Title = $Title
                 try{
                     $OpenForMeObj.Filter = $Filter
                 }
