@@ -2,13 +2,14 @@
     .SYNOPSIS
     This module holds commonly reused fucntions for Application Services scripts.
     .DESCRIPTION
-    There are four functions held in this module that can be called on after importing it.
-    CreateLogs  - Builds logpaths and global variables for them.
-    Log         - Takes info that will be logged to the screen and a log file.
-    OpenForMe   - Handles File/Folder selection dialog box.
-    SelfTest    - Can be used to test against known settings.
-    SendEmail   - Handles sending notification emails.
-    WaitForExit - Can handle smoothly exiting the script.
+    There are five functions held in this module that can be called on after importing it.
+    CreateLogs       - Builds logpaths and global variables for them.
+    GetExtendedProps - Grab the extended windows properties of for a file.
+    Log              - Takes info that will be logged to the screen and a log file.
+    OpenForMe        - Handles File/Folder selection dialog box.
+    SelfTest         - Can be used to test against known settings.
+    SendEmail        - Handles sending notification emails.
+    WaitForExit      - Can handle smoothly exiting the script.
     .NOTES
     Version:  1.6
     Ticket:   None
