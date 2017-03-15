@@ -10,7 +10,7 @@
     SendEmail   - Handles sending notification emails.
     WaitForExit - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.5
+    Version:  1.6
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -21,6 +21,7 @@
               v1.3      2017.02.28   Matthew.Hellmer          Added SendEmail function.
               v1.4      2017.03.03   Matthew.Hellmer          Added OpenForMe function.
               v1.5      2017.03.07   Matthew.Hellmer          Updated OpenForMe (handles initial directory).
+              v1.6      2017.03.14   Matthew.Hellmer          Added GetExtendedProps, Updated SendEmail (use alias for SMTP).
 #>
 
 #Requires -Version 4
@@ -126,6 +127,57 @@ Function CreateLogs
             $LogName = "{0}{1}_{2}.log" -f $Ticket, $Log, $global:TimeStamp
             Set-Variable -Name $VarName -Scope Global -Value (Join-Path -Path $logPath -ChildPath $LogName)
         }
+    }
+}
+
+
+Function GetExtendedProps{
+<#
+    .SYNOPSIS
+    Get extended properties
+    .DESCRIPTION
+    This function will find all of the extended properties of the given object. These are the values you seen in Windows Explorer.
+    .NOTES
+    Version:  1.0
+    Ticket:   None
+    Requires: PowerShell v4
+    Creator:  Matthew Hellmer
+    History:  Version...Date.........User.....................Comment
+              v1.0      2017.03.14   Matthew.Hellmer          Initial Creation
+    .PARAMETER File
+    This is a file that you want to get the Windows extended properties on.
+    .EXAMPLE
+    GetExtendedProps $file
+    A custom object is returned and it has all of the extended properties of the file given.
+#>
+    Param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [System.IO.FileInfo]
+        $File
+    )
+    Begin{
+        # Makes a shell object that we need to access the extended properties.
+        $oShell = New-Object -ComObject Shell.Application
+    }
+    Process{
+        # Holds the gathered properties
+        $props = @{}
+        
+        # Used to get the property names and values
+        $oFolder = $oShell.Namespace($file.DirectoryName)
+        $oItem = $oFolder.ParseName($file.Name)
+
+        # Add all found values to a hash table
+        ForEach($num in 0..287) {
+            $ExtProp = $oFolder.GetDetailsOf($oFolder.Items, $num)
+            $ExtVal  = $oFolder.GetDetailsOf($oItem, $num)
+            if (-not $props.ContainsKey($ExtProp) -and ($ExtProp -ne ”")){
+                $props.Add($ExtProp, $ExtVal)
+            }
+        }
+
+        # Return the found properties and values
+        return New-Object PSObject -Property $props
     }
 }
 
@@ -420,12 +472,13 @@ Function SendEmail
     This function will handle the creation and sending of an email. This allows just updating the APSTools module
     for changes in email settings.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.02.27   Matthew.Hellmer          Initial Creation
+              v1.1      2017.03.14   Matthew Hellmer          Changed default SMTP address to an alias.
     .PARAMETER Sender
     Automatically defaults to Notifications account, but can be overridden
     .PARAMETER Recipient
@@ -453,7 +506,7 @@ Function SendEmail
         $Recipient = "ServiceDesk@s01.smsuite.local",
         [Parameter(Position=2, Mandatory=$false)]
         [String]
-        $SMTP = "s01a-ex01a.s01.smsuite.local",
+        $SMTP = "mail.s01.smsuite",
         [Parameter(Position=3, Mandatory=$true)]
         [String]
         $Subject,
@@ -656,6 +709,7 @@ CreateLogs
 # Export Module #
 #################
 Export-ModuleMember -Function CreateLogs
+Export-ModuleMember -Function GetExtendedProps
 Export-ModuleMember -Function Log
 Export-ModuleMember -Function OpenForMe
 Export-ModuleMember -Function SelfTest
@@ -691,4 +745,6 @@ SelfTest -Type Pre  -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Post -Objects $TestDataObjects -Expected $TestDataExpected
 SelfTest -Type Summary
 SendEmail -Subject "test" -Message "test1" -Attachments @($ErrorLogPath)
+$file = Get-ChildItem -Path 'C:\Windows\System32\cmd.exe'
+GetExtendedProps $file
 #>
