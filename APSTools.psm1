@@ -11,7 +11,7 @@
     SendEmail        - Handles sending notification emails.
     WaitForExit      - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.6
+    Version:  1.7
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -23,6 +23,7 @@
               v1.4      2017.03.03   Matthew.Hellmer          Added OpenForMe function.
               v1.5      2017.03.07   Matthew.Hellmer          Updated OpenForMe (handles initial directory).
               v1.6      2017.03.14   Matthew.Hellmer          Added GetExtendedProps, Updated SendEmail (use alias for SMTP).
+              v1.7      2017.03.17   Matthew.Hellmer          Updated GetExtendedProps (sorted output, added Range parameter).
 #>
 
 #Requires -Version 4
@@ -132,21 +133,25 @@ Function CreateLogs
 }
 
 
-Function GetExtendedProps{
+Function GetExtendedProps
+{
 <#
     .SYNOPSIS
     Get extended properties
     .DESCRIPTION
     This function will find all of the extended properties of the given object. These are the values you seen in Windows Explorer.
     .NOTES
-    Version:  1.0
+    Version:  1.1
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
     History:  Version...Date.........User.....................Comment
               v1.0      2017.03.14   Matthew.Hellmer          Initial Creation
+              v1.1      2017.03.15   Matthew.Hellmer          Added Range Parameter and ordered output
     .PARAMETER File
     This is a file that you want to get the Windows extended properties on.
+    .PARAMETER Range
+    This is an array of values between 0 and 287, and will default to that entire range. Be careful, as these numbers mean different things to different files.
     .EXAMPLE
     GetExtendedProps $file
     A custom object is returned and it has all of the extended properties of the file given.
@@ -154,11 +159,15 @@ Function GetExtendedProps{
     Param(
         [Parameter(Position=0, Mandatory=$true)]
         [System.IO.FileInfo]
-        $File
+        $File,
+        [Parameter(Position=0, Mandatory=$true)]
+        [System.Array]
+        $Range = @(0..287)
     )
     Begin{
         # Makes a shell object that we need to access the extended properties.
-        $oShell = New-Object -ComObject Shell.Application
+        $oShell   = New-Object -ComObject Shell.Application
+        $textInfo = (Get-Culture).TextInfo
     }
     Process{
         # Holds the gathered properties
@@ -173,12 +182,26 @@ Function GetExtendedProps{
             $ExtProp = $oFolder.GetDetailsOf($oFolder.Items, $num)
             $ExtVal  = $oFolder.GetDetailsOf($oItem, $num)
             if (-not $props.ContainsKey($ExtProp) -and ($ExtProp -ne ”")){
-                $props.Add($ExtProp, $ExtVal)
+                # Strip funny characters
+                $ExtProp2 = $TextInfo.ToTitleCase($ExtProp) -replace '[^a-ZA-Z0-9]', ""
+                if(-not $ExtProp2){
+                    $ExtProp2 = $ExtProp
+                }
+                $props.Add($ExtProp2, $ExtVal)
             }
         }
-
+        
+        # Sort the values given
+        $props = $props.GetEnumerator() | Sort Name
+        
+        # Rebuild the hash table with sorted values
+        $props2 = [ordered]@{}
+        foreach($prop in $props2){
+            $props.Add($prop.Name, $prop.Value)
+        }
+        
         # Return the found properties and values
-        return New-Object PSObject -Property $props
+        return New-Object PSObject -Property $props2
     }
 }
 
