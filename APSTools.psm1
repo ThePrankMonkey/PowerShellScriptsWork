@@ -160,7 +160,7 @@ Function GetExtendedProps
         [Parameter(Position=0, Mandatory=$true)]
         [System.IO.FileInfo]
         $File,
-        [Parameter(Position=0, Mandatory=$true)]
+        [Parameter(Position=0, Mandatory=$false)]
         [System.Array]
         $Range = @(0..287)
     )
