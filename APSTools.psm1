@@ -11,7 +11,7 @@
     SendEmail        - Handles sending notification emails.
     WaitForExit      - Can handle smoothly exiting the script.
     .NOTES
-    Version:  1.7
+    Version:  1.8
     Ticket:   None
     Requires: PowerShell v4
     Creator:  Matthew Hellmer
@@ -24,6 +24,7 @@
               v1.5      2017.03.07   Matthew.Hellmer          Updated OpenForMe (handles initial directory).
               v1.6      2017.03.14   Matthew.Hellmer          Added GetExtendedProps, Updated SendEmail (use alias for SMTP).
               v1.7      2017.03.17   Matthew.Hellmer          Updated GetExtendedProps (sorted output, added Range parameter).
+              v1.8      2017.03.19   Matthew.Hellmer          Updated GetExtendedProps (added GetNums parameter).
 #>
 
 #Requires -Version 4
@@ -148,10 +149,13 @@ Function GetExtendedProps
     History:  Version...Date.........User.....................Comment
               v1.0      2017.03.14   Matthew.Hellmer          Initial Creation
               v1.1      2017.03.15   Matthew.Hellmer          Added Range Parameter and ordered output
+              v1.2      2017.03.19   Matthew.Hellmer          Added Debug parameter
     .PARAMETER File
     This is a file that you want to get the Windows extended properties on.
     .PARAMETER Range
     This is an array of values between 0 and 287, and will default to that entire range. Be careful, as these numbers mean different things to different files.
+    .PARAMETER GetNums
+    This is a switch. It will output the same file as normal, except the values are the number for the oShell. Used for getting a list of numbers to use with Range.
     .EXAMPLE
     GetExtendedProps $file
     A custom object is returned and it has all of the extended properties of the file given.
@@ -160,9 +164,12 @@ Function GetExtendedProps
         [Parameter(Position=0, Mandatory=$true)]
         [System.IO.FileInfo]
         $File,
-        [Parameter(Position=0, Mandatory=$false)]
+        [Parameter(Position=1, Mandatory=$false)]
         [System.Array]
-        $Range = @(0..287)
+        $Range = @(0..287),
+        [Parameter(Position=2, Mandatory=$false)]
+        [Switch]
+        $GetNums
     )
     Begin{
         # Makes a shell object that we need to access the extended properties.
@@ -180,7 +187,12 @@ Function GetExtendedProps
         # Add all found values to a hash table
         ForEach($num in 0..287) {
             $ExtProp = $oFolder.GetDetailsOf($oFolder.Items, $num)
-            $ExtVal  = $oFolder.GetDetailsOf($oItem, $num)
+            if($GetNums){
+                $ExtVal = $num
+            }
+            else{
+                $ExtVal  = $oFolder.GetDetailsOf($oItem, $num)
+            }
             if (-not $props.ContainsKey($ExtProp) -and ($ExtProp -ne ”")){
                 # Strip funny characters
                 $ExtProp2 = $TextInfo.ToTitleCase($ExtProp) -replace '[^a-zA-Z0-9]', ""
