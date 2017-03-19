@@ -183,7 +183,7 @@ Function GetExtendedProps
             $ExtVal  = $oFolder.GetDetailsOf($oItem, $num)
             if (-not $props.ContainsKey($ExtProp) -and ($ExtProp -ne ”")){
                 # Strip funny characters
-                $ExtProp2 = $TextInfo.ToTitleCase($ExtProp) -replace '[^a-ZA-Z0-9]', ""
+                $ExtProp2 = $TextInfo.ToTitleCase($ExtProp) -replace '[^a-zA-Z0-9]', ""
                 if(-not $ExtProp2){
                     $ExtProp2 = $ExtProp
                 }
@@ -196,8 +196,8 @@ Function GetExtendedProps
         
         # Rebuild the hash table with sorted values
         $props2 = [ordered]@{}
-        foreach($prop in $props2){
-            $props.Add($prop.Name, $prop.Value)
+        foreach($prop in $props){
+            $props2.Add($prop.Name, $prop.Value)
         }
         
         # Return the found properties and values
