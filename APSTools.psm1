@@ -25,6 +25,7 @@
               v1.6      2017.03.14   Matthew.Hellmer          Added GetExtendedProps, Updated SendEmail (use alias for SMTP).
               v1.7      2017.03.17   Matthew.Hellmer          Updated GetExtendedProps (sorted output, added Range parameter).
               v1.8      2017.03.19   Matthew.Hellmer          Updated GetExtendedProps (added GetNums parameter).
+              v1.9      2017.04.20   Matthew.Hellmer          Updated CreateLogs, OpenForMe. Added some variables.
 #>
 
 #Requires -Version 4
@@ -41,7 +42,10 @@ $global:GlobalArgs    = ""
 $logPath              = ""
 $domainServer         = "S01A-DC01"
 $predesignatedFolder  = "C:\Temp"
-
+$global:GPORepository       = "\\s01a-gitserver\GPORepository"
+$global:LogRepository       = "\\s01a-gitserver\LogRepository"
+$global:ScriptRepository    = "\\s01a-gitserver\ScriptRepository"
+$global:TestingRepository   = "\\s01a-gitserver\TestingRepository"
 
 
 
@@ -65,6 +69,7 @@ Function CreateLogs
               v1.0      2017.02.16   Matthew.Hellmer          Initial Creation
               v1.1      2017.02.23   Matthew.Hellmer          Supports making mulitple logs now.
               v1.2      2017.02.28   Matthew.Hellmer          Added a Override parameter. Fixed the identified folder to be relative to the calling script.
+              v1.3      2017.04.20   Matthew.Hellmer          Changed default folder
     .PARAMETER Logs
     An array of logs to make paths for. Always includes Error
     .PARAMETER Ticket
@@ -107,14 +112,19 @@ Function CreateLogs
         else{
             try{
                 if($Override){
-                    $logPath = Split-Path -Path $Override -Parent -ErrorAction Stop
+                    $logPath = $Override
                 }
                 else{
-                    $logPath = Split-Path -Path $script:MyInvocation.PSCommandPath -Parent -ErrorAction Stop
+                    $scriptFolder = Split-Path -Path $script:MyInvocation.PSCommandPath -Parent -ErrorAction Stop
+                    $scriptStart = $scriptFolder.LastIndexOf("\")
+                    $scriptEnd = $scriptFolder.Length - $scriptStart
+                    $scriptParent = $scriptFolder.Substring($scriptStart, $scriptEnd)
+                    $logPath = "$global:LogRepository$scriptParent"
                 }
             }
             catch{
                 $logPath = $predesignatedFolder
+                Write-Host "Issue with assigning log path. Defaulting to: $logPath" -ForegroundColor Red
             }
         }
 
@@ -149,7 +159,7 @@ Function GetExtendedProps
     History:  Version...Date.........User.....................Comment
               v1.0      2017.03.14   Matthew.Hellmer          Initial Creation
               v1.1      2017.03.15   Matthew.Hellmer          Added Range Parameter and ordered output
-              v1.2      2017.03.19   Matthew.Hellmer          Added Debug parameter
+              v1.2      2017.03.19   Matthew.Hellmer          Added GetNums parameter
     .PARAMETER File
     This is a file that you want to get the Windows extended properties on.
     .PARAMETER Range
@@ -348,6 +358,8 @@ Function OpenForMe
     History:  Version...Date.........User.....................Comment
               v1.0      2017.03.03   Matthew.Hellmer          Initial Creation
               v1.1      2017.03.07   Matthew.Hellmer          Added InitialPath parameter. Defaults to folder that holds Error Logs.
+              v1.2      2017.04.19   Matthew.Hellmer          Fixed handling Cancel.
+              v1.3      2017.04.20   Matthew.Hellmer          Fixed window appearing behind issue.
     .PARAMETER Type
     This determines if the dialogue is for File or Folder.
     .PARAMETER Title
@@ -381,8 +393,34 @@ Function OpenForMe
         $Multiple
     )
     Begin{
-        [Void] [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
+        [Void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
         $StartPath = Split-Path $global:ErrorLogPath -Parent
+        Add-Type -TypeDefinition @"
+using System;
+using System.Windows.Forms;
+public class Win32Window : IWin32Window
+{
+    private IntPtr _hWnd;
+    private int _data;
+
+    public int Data
+    {
+        get { return _data; }
+        set { _data = value; }
+    }
+
+    public Win32Window(IntPtr handle)
+    {
+        _hWnd = handle;
+    }
+
+    public IntPtr Handle
+    {
+        get { return _hWnd; }
+    }
+}
+"@ -ReferencedAssemblies 'System.Windows.Forms.dll'
+        $owner = New-Object Win32Window -ArgumentList ([System.Diagnostics.Process]::GetCurrentProcess().MainWindowHandle)
     }
     Process{
         if($InitialPath){
@@ -394,7 +432,7 @@ Function OpenForMe
                 $OpenForMeObj.ShowNewFolderButton = $false
                 $OpenForMeObj.Description = $Title
                 $OpenForMeObj.SelectedPath = $StartPath
-                $OpenForMeObj.ShowDialog() | Out-Null
+                $results = $OpenForMeObj.ShowDialog($owner) | Out-Null
                 $selections = @($OpenForMeObj.SelectedPath)
             }
             "File"{
@@ -413,12 +451,12 @@ Function OpenForMe
                     $OpenForMeObj.Filter = "All Files | *.*"
                     Log -NewError $_ -CustomMessage "Unexpected error on OpenForMe-File." -Type Error
                 }
-                $OpenForMeObj.ShowDialog() | Out-Null
+                $results = $OpenForMeObj.ShowDialog($owner) | Out-Null
                 $selections = @($OpenForMeObj.FileNames)
             }
         }
 
-        if($selections){
+        if($results -eq "OK"){
             $Output = @()
             foreach($selection in $selections){
                 $Output += Get-Item -Path $selection
@@ -580,7 +618,7 @@ Function SendEmail
         }
         catch{
             [System.GC]::Collect()
-            Log -CustomMessage "Error encountered while sending email" -Type Error
+            Log -NewError $_ -CustomMessage "Error encountered while sending email" -Type Error
         }
     }
 }
@@ -757,7 +795,10 @@ Export-ModuleMember -Variable $global:PostObjects
 Export-ModuleMember -Variable $global:PreObjects
 Export-ModuleMember -Variable $global:TimeStamp
 Export-ModuleMember -Variable $logPath
-
+Export-ModuleMember -Variable $global:GPORepository
+Export-ModuleMember -Variable $global:LogRepository
+Export-ModuleMember -Variable $global:ScriptRepository
+Export-ModuleMember -Variable $global:TestingRepository
 
 
 
