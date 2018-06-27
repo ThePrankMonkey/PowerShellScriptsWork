@@ -1,16 +1,17 @@
-Add-PSSnapin VMware.VimAutomation.Core
-Add-PSSnapin VMware.VimAutomation.VDS
+Import-Module VMware.VimAutomation.Core
+Import-Module VMware.VimAutomation.VDS
 
-Connect-VIServer "VCenter"
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore
+Connect-VIServer "test"
 clear
 
 ############
 # Settings #
 ############
-$vmName = "vm1"
+$vmName = "vmName"
 $files = @"
-File\Path\1
-File\Path\2
+File/Path1
+File/Path2
 "@ -split "`r`n"
 
 
@@ -33,7 +34,7 @@ foreach($file in $files){
   # Encode and split file script
   $scriptEncode = @"
     `$content = Get-Content -Path `"$file`" | Out-String
-    `$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBuytes(`$content))
+    `$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes(`$content))
     
     `$count = 0
     while(`$encoded){
@@ -41,12 +42,13 @@ foreach($file in $files){
       `$encodedTemp, `$encoded = ([Char[]]`$encoded).Where({`$_},"Split",2500)
       Set-Content -Path `"$file.`$count`" -Value `$encodedTemp | Out-Null
     }
-    $count
+    `$count
 "@
   
   $encodedCheck = $true
   try{
     $scriptEncodedResults = Invoke-VMScript -ScriptText $scriptEncode -GuestCredential $cred -VM $vm -ErrorAction Stop
+    Write-Host $scriptEncodedResults
     $count = [int32] $scriptEncodedResults.ScriptOutput
     Write-Host ("[[Encoding/Splitting File]] Processing Success")
   }
